@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GHTK - Hệ Thống Quản Lý & Tra Cứu Đơn Hàng</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        :root {
+            --ghtk-green: #008848;
+            --ghtk-green-dark: #006b38;
+            --bg-body: #f4f6f8;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg-body); 
+            color: #2c3e50;
+            padding: 0; 
+            margin: 0; 
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .app-header-bg {
+            background: var(--ghtk-green);
+            padding: 12px 16px;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header-logo-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header-logo-row svg { height: 32px; width: auto; }
+        
+        .header-hotline {
+            font-size: 11px;
+            font-weight: bold;
+            color: #ffffff;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .tab-bar-container {
+            background: var(--ghtk-green-dark);
+            border-bottom: 3px solid var(--ghtk-green);
+        }
+        .tab-bar {
+            display: flex;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 11px 5px;
+            text-align: center;
+            color: rgba(255,255,255,0.75);
+            font-size: 13px;
+            font-weight: bold;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            color: #ffffff;
+            background: var(--ghtk-green);
+            border-bottom: 3px solid #ff3d00;
+        }
+
+        .main-wrapper {
+            flex: 1;
+            max-width: 600px;
+            width: 100%;
+            margin: 15px auto;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .container { 
+            background: var(--card-bg); 
+            padding: 16px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            margin-bottom: 20px; 
+            border: 1px solid var(--border-color);
+        }
+        
+        h2 { 
+            color: var(--ghtk-green); 
+            font-size: 15px; 
+            border-bottom: 2px solid #e8f5e9; 
+            padding-bottom: 8px; 
+            margin-top: 0; 
+            margin-bottom: 12px; 
+            text-transform: uppercase; 
+        }
+        
+        label { font-size: 12px; font-weight: 600; color: #4a5568; margin-top: 10px; display: block; }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 4px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 13px; box-sizing: border-box; outline: none; background: #fafbfc; }
+        input:focus { border-color: var(--ghtk-green); background: #fff; }
+
+        .insurance-box { background: #f0fdf4; padding: 10px; border-radius: 8px; border: 1px dashed var(--ghtk-green); margin-top: 12px; }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+        .checkbox-group input { width: 16px; height: 16px; margin: 0; accent-color: var(--ghtk-green); }
+        .checkbox-group label { margin: 0; font-size: 12px; color: var(--ghtk-green); cursor: pointer; }
+
+        .btn-submit, .btn-search { background: var(--ghtk-green); color: white; border: none; width: 100%; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; margin-top: 15px; cursor: pointer; }
+        .btn-submit:hover, .btn-search:hover { background: var(--ghtk-green-dark); }
+
+        .card { border: 1px solid #e2e8f0; background: #fafbfc; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+        .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .card-id { font-weight: bold; color: var(--ghtk-green); font-size: 13px; }
+        .status-select { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; outline: none; border: 1px solid #ccc; width: auto; }
+        .status-confirmed { background: #e8f5e9; color: var(--ghtk-green); border-color: #c8e6c9; }
+        .status-unconfirmed { background: #ffebee; color: #c0392b; border-color: #ffcdd2; }
+        .card-info { font-size: 12px; color: #333; margin: 4px 0; }
+        
+        .btn-group { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+        .btn-action { background: var(--ghtk-green); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .btn-edit { background: #f59e0b; }
+        .btn-timeline { background: #2563eb; }
+        .btn-route { background: #7c3aed; }
+        .btn-del { background: #dc2626; }
+        .timeline-box { background: #e8f5e9; padding: 6px 8px; border-radius: 6px; margin-top: 6px; font-size: 11px; border-left: 3px solid var(--ghtk-green); }
+
+        .search-box-group { display: flex; gap: 6px; margin-top: 5px; }
+        #resultSection { display: none; margin-top: 15px; border-top: 2px solid var(--border-color); padding-top: 12px; }
+        .result-card { background: #fafbfc; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; }
+        .badge-confirmed { background: #e8f5e9; color: var(--ghtk-green); padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px solid #c8e6c9; display: inline-block; }
+        .badge-unconfirmed { background: #ffebee; color: #c0392b; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px solid #ffcdd2; display: inline-block; }
+        .info-row { font-size: 12px; color: #2d3748; margin: 6px 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #edf2f7; padding-bottom: 4px; }
+        .info-row:last-child { border-bottom: none; }
+
+        .map-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px; margin-top: 12px; }
+        .map-title { font-size: 11px; font-weight: bold; color: var(--ghtk-green); margin-bottom: 6px; }
+        .map-visual { 
+            width: 100%; height: 120px; background: linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%); 
+            border-radius: 6px; position: relative; overflow: hidden; border: 1px solid #e2e8f0; 
+            display: flex; align-items: center; justify-content: space-between; padding: 0 25px; box-sizing: border-box; 
+        }
+        .map-route-line { position: absolute; height: 3px; background: var(--ghtk-green); width: 70%; left: 15%; top: 50%; border-style: dashed; }
+        .map-point { display: flex; flex-direction: column; align-items: center; z-index: 2; font-size: 9px; font-weight: bold; color: #4a5568; }
+        .point-icon { width: 26px; height: 26px; background: white; border: 2px solid var(--ghtk-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); margin-bottom: 3px; }
+        .moving-ghtk-logo { position: absolute; top: 32%; left: 60%; z-index: 3; animation: slowMoveNearReceiver 5s infinite alternate ease-in-out; }
+        @keyframes slowMoveNearReceiver {
+            0% { left: 58%; transform: scale(0.95); }
+            100% { left: 67%; transform: scale(1); }
+        }
+
+        #invoiceModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; overflow-y: auto; padding: 10px; box-sizing: border-box; }
+        .invoice-sheet { background: white; max-width: 420px; margin: 20px auto; padding: 15px; border: 2px solid #111; font-family: monospace; color: #000; position: relative; }
+        .inv-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #111; padding-bottom: 6px; }
+        .inv-barcode-container { text-align: center; margin: 6px 0 2px 0; }
+        .inv-barcode-container svg { width: 100%; max-height: 40px; }
+        .inv-table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 11px; }
+        .inv-table, .inv-table th, .inv-table td { border: 1px solid #111; padding: 4px; vertical-align: top; }
+        .company-stamp { display: none; position: absolute; bottom: 50px; right: 15px; width: 120px; height: 120px; pointer-events: none; z-index: 10; transform: rotate(-15deg); opacity: 0.88; }
+        .btn-print { background: var(--ghtk-green); color: white; border: none; width: 100%; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 6px; margin-top: 12px; cursor: pointer; }
+        .btn-close { background: #dc2626; color: white; border: none; width: 100%; padding: 8px; font-size: 12px; font-weight: bold; border-radius: 6px; margin-top: 6px; cursor: pointer; }
+
+        .app-footer { background: #ffffff; color: #64748b; padding: 15px; font-size: 11px; text-align: center; border-top: 1px solid var(--border-color); margin-top: auto; }
+    </style>
+</head>
+<body>
+
+    <div class="app-header-bg">
+        <div class="header-logo-row">
+            <svg viewBox="0 0 200 50" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 15h12M2 25h15M8 35h9" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="38" cy="28" r="16" fill="#fff" stroke="#00e676" stroke-width="3.5"/>
+                <path d="M25 22h24c-1-8-8-12-12-12s-11 4-12 12z" fill="#fff"/>
+                <circle cx="32" cy="26" r="1.5" fill="#008848"/>
+                <circle cx="44" cy="26" r="1.5" fill="#008848"/>
+                <path d="M33 32c3 3 7 3 10 0" stroke="#008848" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+                <text x="68" y="34" font-family="-apple-system, sans-serif" font-weight="900" font-size="28" fill="#fff" letter-spacing="1">GHTK</text>
+            </svg>
+            <div class="header-hotline">📞 1900 5454 84</div>
+        </div>
+    </div>
+
+    <div class="tab-bar-container">
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('createTab', this)">➕ Tạo Đơn</button>
+            <button class="tab-btn" onclick="switchTab('manageTab', this)">📋 Quản Lý</button>
+            <button class="tab-btn" onclick="switchTab('searchTab', this)">🔍 Tra Cứu</button>
+        </div>
+    </div>
+
+    <div class="main-wrapper">
+        <!-- TAB 1: TẠO ĐƠN -->
+        <div id="createTab" class="tab-content active">
+            <div class="container">
+                <h2>Tạo Đơn Hàng Mới</h2>
+                <form id="orderForm">
+                    <label>Tên Shop / Người gửi:</label>
+                    <input type="text" id="senderName" value="Shop của tôi" required>
+
+                    <label>Kho lấy hàng:</label>
+                    <input type="text" id="warehouse" value="BC Thọ Tháp (HN)" required>
+
+                    <label>Khối lượng (KG):</label>
+                    <input type="text" id="weight" value="1.0 KG" required>
+
+                    <label>Tên người nhận:</label>
+                    <input type="text" id="name" required placeholder="Nhập họ tên...">
+                    
+                    <label>Số điện thoại:</label>
+                    <input type="tel" id="phone" required placeholder="Nhập SĐT...">
+                    
+                    <label>Địa chỉ nhận hàng:</label>
+                    <input type="text" id="address" required placeholder="Cầu Giấy, Hà Nội...">
+                    
+                    <label>Tiền thu hộ COD (VNĐ):</label>
+                    <input type="number" id="cod" value="0" required>
+
+                    <label>Danh sách sản phẩm:</label>
+                    <textarea id="products" rows="2">Quần áo thời trang</textarea>
+
+                    <div class="insurance-box">
+                        <label style="margin-top:0;">Giá trị hàng hóa:</label>
+                        <input type="number" id="itemValue" value="0">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="insurance" checked>
+                            <label for="insurance">🔒 <b>Đăng ký Bảo hiểm hàng hóa</b></label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit">XÁC NHẬN & TẠO ĐƠN</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 2: QUẢN LÝ -->
+        <div id="manageTab" class="tab-content">
+            <div class="container">
+                <h2>Quản Lý Đơn Hàng</h2>
+                <div id="orderList"></div>
+            </div>
+        </div>
+
+        <!-- TAB 3: TRA CỨU -->
+        <div id="searchTab" class="tab-content">
+            <div class="container">
+                <h2>Tra Cứu Mã Vận Đơn</h2>
+                <label>Nhập mã vận đơn:</label>
+                <div class="search-box-group">
+                    <input type="text" id="searchInput" placeholder="Ví dụ: 3174220207...">
+                    <button class="btn-search" onclick="searchOrder()" style="margin-top:0; padding:0 15px;">Tra cứu</button>
+                </div>
+
+                <div id="resultSection">
+                    <div class="result-card" id="resultCardContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <div>Tổng đài HTKS: <b>1900 5454 84</b> (8:00 - 21:00)</div>
+        <div style="font-size: 10px; opacity: 0.8; margin-top: 3px;">CÔNG TY CỔ PHẦN GIAO HÀNG TIẾT KIỆM • © 2026</div>
+    </footer>
+
+    <!-- MODAL IN -->
+    <div id="invoiceModal">
+        <div class="invoice-sheet">
+            <svg id="companyStamp" class="company-stamp" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="70" cy="70" r="64" fill="none" stroke="#c0392b" stroke-width="3"/>
+                <circle cx="70" cy="70" r="56" fill="none" stroke="#c0392b" stroke-width="1" stroke-dasharray="3,2"/>
+                <path id="curvePath" d="M 20,70 A 50,50 0 1,1 120,70" fill="none" stroke="none"/>
+                <text font-size="10.5" font-weight="bold" fill="#c0392b" font-family="Arial, sans-serif" letter-spacing="1.2">
+                    <textPath href="#curvePath" startOffset="50%" text-anchor="middle">GIAO HÀNG TIẾT KIỆM - JSC</textPath>
+                </text>
+                <text x="70" y="52" font-size="9" font-weight="bold" fill="#c0392b" text-anchor="middle" font-family="Arial">★ CAM KẾT ★</text>
+                <text x="70" y="68" font-size="8" font-weight="bold" fill="#c0392b" text-anchor="middle" font-family="Arial">CHỊU TRÁCH NHIỆM</text>
+                <text x="70" y="81" font-size="8" font-weight="bold" fill="#c0392b" text-anchor="middle" font-family="Arial">BẢO HIỂM ĐƠN HÀNG</text>
+                <text x="70" y="98" font-size="8.5" font-weight="bold" fill="#c0392b" text-anchor="middle" font-family="Arial">HN - 01</text>
+            </svg>
+
+            <div class="inv-header">
+                <div><b>📦 GHTK</b> &nbsp; ✈️ <b>EXPRESS</b></div>
+                <div id="invTime" style="font-size: 9px;">Ngày tạo: 07/06/2023</div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #111; padding-bottom: 4px;">
+                <div style="width: 70%;">
+                    <div class="inv-barcode-container"><svg id="barcode"></svg></div>
+                    <div id="invIdText" style="text-align: center; font-size: 11px; font-weight: bold;">3174220207</div>
+                </div>
+                <div style="border: 2px solid #111; padding: 2px 6px; text-align: center; width: 28%;">
+                    <div id="invRoute" style="font-size: 11px; font-weight: bold;">HN25 - F2</div>
+                    <div style="font-size: 7px;">fragile / secure</div>
+                </div>
+            </div>
+
+            <table class="inv-table">
+                <tr>
+                    <td style="width: 55%;">
+                        <b>Người gửi:</b> <span id="invSender">Shop</span><br>
+                        <b>Người nhận:</b> <span id="invReceiver">Name</span><br>
+                        <b>SĐT:</b> <span id="invPhone">Phone</span><br>
+                        <b>Đ/c:</b> <span id="invAddress">Address</span>
+                    </td>
+                    <td style="width: 45%;">
+                        <b>Khối lượng:</b> <span id="invWeight">1.0 KG</span><br>
+                        <b>Thu hộ (COD):</b> <br><span id="invCod" style="font-size: 12px; font-weight: bold;">0 đ</span><br>
+                        <b>Kho lấy:</b> <span id="invWarehouse">BC Thọ Tháp</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2"><b>Mã đơn khách hàng:</b> <span id="invCustomId">AB-1234</span></td>
+                </tr>
+                <tr>
+                    <td><b>Sản phẩm:</b><div id="invProducts" style="font-size: 10px;">Quần áo</div></td>
+                    <td><b>Ghi chú:</b><div style="font-size: 10px; font-weight: bold;">Được đồng kiểm.</div></td>
+                </tr>
+            </table>
+
+            <button class="btn-print" onclick="window.print()">🖨️ IN / LƯU HÓA ĐƠN</button>
+            <button class="btn-close" onclick="closeInvoice()">ĐÓNG LẠI</button>
+        </div>
+    </div>
+
+<script>
+    function switchTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btnElement.classList.add('active');
+        if(tabId === 'manageTab') { renderOrders(); }
+    }
+
+    function getOrders() {
+        try {
+            let data = JSON.parse(localStorage.getItem('ghtk_orders'));
+            return Array.isArray(data) ? data : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    document.getElementById('orderForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        let randomNum = Math.floor(1000000000 + Math.random() * 9000000000);
+        let now = new Date().toLocaleString('vi-VN');
+        let hasInsurance = document.getElementById('insurance').checked;
+
+        let orderData = {
+            id: randomNum,
+            sender: document.getElementById('senderName').value,
+            warehouse: document.getElementById('warehouse').value,
+            weight: document.getElementById('weight').value,
+            name: document.getElementById('name').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            address: document.getElementById('address').value.trim(),
+            cod: Number(document.getElementById('cod').value).toLocaleString('vi-VN') + ' đ',
+            products: document.getElementById('products').value,
+            time: now,
+            insurance: hasInsurance ? 'Có bảo hiểm' : 'Không',
+            status: 'confirmed',
+            route: 'HN25 - F2',
+            timeline: [{ time: now, status: 'Đã tạo đơn hàng & tiếp nhận tại kho' }]
+        };
+
+        let orders = getOrders();
+        orders.unshift(orderData);
+        localStorage.setItem('ghtk_orders', JSON.stringify(orders));
+        showInvoiceModal(orderData);
+    });
+
+    function renderOrders() {
+        let orders = getOrders();
+        let listDiv = document.getElementById('orderList');
+        
+        if (orders.length === 0) {
+            listDiv.innerHTML = '<p style="text-align:center;color:#888;font-size:12px;">Chưa có đơn hàng nào trong hệ thống.</p>';
+            return;
+        }
+
+        listDiv.innerHTML = orders.map((o, index) => {
+            let status = o.status || 'confirmed';
+            let timelineHtml = o.timeline ? o.timeline.map(t => `<div style="font-size:10px; color:#555;">⏱ ${t.time} - 📍 <b>${t.status}</b></div>`).join('') : '';
+            return `
+                <div class="card">
+                    <div class="card-header-flex">
+                        <div class="card-id">Mã đơn: ${o.id}</div>
+                        <select class="status-select ${status === 'confirmed' ? 'status-confirmed' : 'status-unconfirmed'}" onchange="changeStatus(${index}, this.value)">
+                            <option value="confirmed" ${status === 'confirmed' ? 'selected' : ''}>✓ Đã xác nhận</option>
+                            <option value="unconfirmed" ${status === 'unconfirmed' ? 'selected' : ''}>⏳ Chưa xác nhận</option>
+                        </select>
+                    </div>
+                    <div class="card-info">🏢 Kho: <b>${o.warehouse || 'BC Thọ Tháp'}</b> | Tuyến: <b>${o.route || 'HN25 - F2'}</b></div>
+                    <div class="card-info">👤 <b>${o.name}</b> - 📞 ${o.phone}</div>
+                    <div class="card-info">📍 ${o.address}</div>
+                    <div class="card-info">💰 COD: <b>${o.cod}</b> | KL: <b>${o.weight || '1.0 KG'}</b></div>
+                    <div class="card-info">🛡️ Bảo hiểm: <span style="color:${o.insurance && o.insurance.includes('Có') ? '#008848' : '#dc2626'};font-weight:bold;">${o.insurance || 'Không'}</span></div>
+                    ${timelineHtml ? `<div class="timeline-box"><b>Hành trình:</b><br>${timelineHtml}</div>` : ''}
+                    <div class="btn-group">
+                        <button class="btn-action" onclick="showInvoiceByIndex(${index})">🖨️ In Hóa Đơn</button>
+                        <button class="btn-action btn-timeline" onclick="addTimeline(${index})">⏱ Thêm Hành Trình</button>
+                        <button class="btn-action btn-route" onclick="editRoute(${index})">📍 Sửa Tuyến</button>
+                        <button class="btn-action btn-edit" onclick="editAddress(${index})">✏️ Sửa Đ/c</button>
+                        <button class="btn-action btn-del" onclick="deleteOrder(${index})">🗑 Xóa</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function changeStatus(index, newStatus) {
+        let orders = getOrders();
+        orders[index].status = newStatus;
+        localStorage.setItem('ghtk_orders', JSON.stringify(orders));
+        renderOrders();
+    }
+
+    function editRoute(index) {
+        let orders = getOrders();
+        let newRoute = prompt("Nhập mã tuyến mới (VD: SG12 - A1):", orders[index].route || 'HN25 - F2');
+        if (newRoute && newRoute.trim() !== "") {
+            orders[index].route = newRoute.trim();
+            localStorage.setItem('ghtk_orders', JSON.stringify(orders));
+            renderOrders();
+        }
+    }
+
+    function editAddress(index) {
+        let orders = getOrders();
+        let newAddr = prompt("Nhập địa chỉ mới:", orders[index].address);
+        if (newAddr && newAddr.trim() !== "") {
+            orders[index].address = newAddr.trim();
+            localStorage.setItem('ghtk_orders', JSON.stringify(orders));
+            renderOrders();
+        }
+    }
+
+    function addTimeline(index) {
+        let defaultTime = new Date().toLocaleString('vi-VN');
+        let timeInput = prompt("Nhập thời gian hành trình:", defaultTime);
+        if (timeInput === null) return;
+        let statusInput = prompt("Nhập nội dung trạng thái hành trình:", "Đang giao hàng");
+        if (statusInput && statusInput.trim() !== "") {
+            let orders = getOrders();
+            if(!orders[index].timeline) orders[index].timeline = [];
+            orders[index].timeline.unshift({ time: timeInput.trim(), status: statusInput.trim() });
+            localStorage.setItem('ghtk_orders', JSON.stringify(orders));
+            renderOrders();
+        }
+    }
+
+    function deleteOrder(index) {
+        if (confirm("Xóa đơn hàng này?")) {
+            let orders = getOrders();
+            orders.splice(index, 1);
+            localStorage.setItem('ghtk_orders', JSON.stringify(orders));
+            renderOrders();
+        }
+    }
+
+    function showInvoiceByIndex(index) {
+        let orders = getOrders();
+        if(orders[index]) showInvoiceModal(orders[index]);
+    }
+
+    function showInvoiceModal(order) {
+        document.getElementById('invTime').innerText = 'Ngày tạo: ' + order.time;
+        document.getElementById('invIdText').innerText = order.id;
+        document.getElementById('invSender').innerText = order.sender;
+        document.getElementById('invWarehouse').innerText = order.warehouse;
+        document.getElementById('invRoute').innerText = order.route || 'HN25 - F2';
+        document.getElementById('invWeight').innerText = order.weight;
+        document.getElementById('invReceiver').innerText = order.name;
+        document.getElementById('invPhone').innerText = order.phone;
+        document.getElementById('invAddress').innerText = order.address;
+        document.getElementById('invCod').innerText = order.cod;
+        document.getElementById('invCustomId').innerText = 'GHTK-' + order.id.toString().slice(-6);
+        document.getElementById('invProducts').innerText = order.products;
+
+        JsBarcode("#barcode", order.id.toString(), { format: "CODE128", lineColor: "#000", width: 1.8, height: 35, displayValue: false });
+
+        if (order.insurance && order.insurance.includes('Có')) {
+            document.getElementById('companyStamp').style.display = 'block';
+        } else {
+            document.getElementById('companyStamp').style.display = 'none';
+        }
+        document.getElementById('invoiceModal').style.display = 'block';
+    }
+
+    function closeInvoice() {
+        document.getElementById('invoiceModal').style.display = 'none';
+        document.getElementById('orderForm').reset();
+    }
+
+    function searchOrder() {
+        let query = document.getElementById('searchInput').value.trim();
+        let resultSection = document.getElementById('resultSection');
+        let cardContent = document.getElementById('resultCardContent');
+
+        if (!query) {
+            alert("Vui lòng nhập mã vận đơn!");
+            return;
+        }
+
+        let orders = getOrders();
+        let order = orders.find(o => o.id.toString() === query || ('GHTK-' + o.id.toString().slice(-6)) === query.toUpperCase());
+
+        resultSection.style.display = 'block';
+
+        if (!order) {
+            cardContent.innerHTML = '<p style="color:#dc2626; text-align:center; font-weight:bold; margin: 8px 0; font-size:12px;">Không tìm thấy mã vận đơn!</p>';
+            return;
+        }
+
+        let isConfirmed = order.status !== 'unconfirmed';
+        let timelineHtml = order.timeline && order.timeline.length > 0 
+            ? order.timeline.map(t => `<div style="padding:4px 0; border-bottom:1px solid #f1f5f9; color:#4a5568;">⏱ <b>${t.time}</b> - 📍 ${t.status}</div>`).join('')
+            : '<div style="color:#a0aec0; font-style:italic;">Chưa có cập nhật hành trình.</div>';
+
+        cardContent.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+                <div>
+                    <span style="font-size: 10px; color: #718096; display: block;">MÃ VẬN ĐƠN</span>
+                    <b style="color:var(--ghtk-green); font-size:15px;">${order.id}</b>
+                </div>
+                <div>
+                    <span class="${isConfirmed ? 'badge-confirmed' : 'badge-unconfirmed'}">
+                        ${isConfirmed ? '✓ Đã xác nhận' : '⏳ Chưa xác nhận'}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="info-row"><span>🏢 Kho lấy:</span> <b>${order.warehouse || 'BC Thọ Tháp'}</b></div>
+            <div class="info-row"><span>📍 Tuyến:</span> <b>${order.route || 'HN25 - F2'}</b></div>
+            <div class="info-row"><span>👤 Người nhận:</span> <b>${order.name} (${order.phone})</b></div>
+            <div class="info-row"><span>📍 Địa chỉ:</span> <span style="text-align: right; max-width: 55%;">${order.address}</span></div>
+            <div class="info-row"><span>💰 Tiền COD:</span> <b style="color:#dc2626;">${order.cod}</b></div>
+            <div class="info-row"><span>⚖️ Khối lượng:</span> <b>${order.weight || '1.0 KG'}</b></div>
+            <div class="info-row"><span>🛡️ Bảo hiểm:</span> <b style="color:${order.insurance && order.insurance.includes('Có') ? 'var(--ghtk-green)' : '#dc2626'};">${order.insurance || 'Không'}</b></div>
+
+            <div class="map-box">
+                <div class="map-title">🗺️ BẢN ĐỒ LỘ TRÌNH ĐƠN HÀNG</div>
+                <div class="map-visual">
+                    <div class="map-route-line"></div>
+                    <div class="moving-ghtk-logo" title="Đang giao đến người nhận">
+                        <svg viewBox="0 0 36 36" width="30" height="30" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="18" cy="18" r="16" fill="#fff" stroke="#008848" stroke-width="3"/>
+                            <path d="M11 15h14c-0.5-4.5-4.5-7-7-7s-6.5 2.5-7 7z" fill="#ff3d00"/>
+                        </svg>
+                    </div>
+                    <div class="map-point"><div class="point-icon">🏢</div><span>Kho lấy</span></div>
+                    <div class="map-point"><div class="point-icon">🏠</div><span>Người nhận</span></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 12px; font-size: 12px; font-weight: bold; color: #2d3748;">📜 Lịch sử hành trình:</div>
+            <div style="background: #fff; padding: 10px; border-radius: 6px; margin-top: 8px; font-size: 11px; border: 1px solid var(--border-color);">
+                ${timelineHtml}
+            </div>
+        `;
+    }
+</script>
+</body>
+</html>
